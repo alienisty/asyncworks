@@ -14,7 +14,7 @@
  limitations under the License.
 -->
 <project basedir="." default="jar" name="asyncworks">
-  <property name="version" value="trunk" />
+  <property name="version" value="0.9" />
   <property name="class.level" value="1.5" />
 
   <property name="test.dir" value="build/test" />
@@ -44,7 +44,7 @@
   <taskdef classpathref="cobertura.classpath" resource="tasks.properties" />
 
   <target name="jar" depends="build">
-    <jar destfile="build/${ant.project.name}.jar">
+    <jar destfile="build/${ant.project.name}-${version}.jar">
       <fileset dir="${basedir}">
         <include name="LICENSE.txt" />
       </fileset>
@@ -139,7 +139,7 @@
     </javadoc>
   </target>
 
-  <target name="release" depends="tag-version, test, jar, docs" description="make accessive-xxx.zip">
+  <target name="release" depends="clean, test, jar, docs" description="make accessive-xxx.zip">
     <zip destfile="build/${ant.project.name}-${version}.zip">
       <zipfileset dir="${basedir}">
         <include name="README.txt" />
@@ -149,7 +149,7 @@
         <include name="test/" />
       </zipfileset>
       <zipfileset dir="${basedir}/build">
-        <include name="accessive.jar" />
+        <include name="${ant.project.name}-${version}.jar" />
         <include name="docs/" />
         <include name="test/" />
       </zipfileset>
@@ -163,28 +163,5 @@
 
   <target name="clean">
     <delete dir="build" />
-  </target>
-  
-  <target name="tag-version" description="Tags the current version in the javadoc">
-    <replaceregexp byline="true">
-      <regexp pattern="@version[\s]*.*$" />
-      <substitution expression="@version ${version}" />
-      <fileset dir="src">
-        <include name="**/*.java" />
-      </fileset>
-      <fileset dir="test">
-        <include name="**/*.java" />
-      </fileset>
-    </replaceregexp>
-    <replaceregexp byline="true">
-      <regexp pattern="@since[\s]*$" />
-      <substitution expression="@since ${version}" />
-      <fileset dir="src">
-        <include name="**/*.java" />
-      </fileset>
-      <fileset dir="test">
-        <include name="**/*.java" />
-      </fileset>
-    </replaceregexp>
   </target>
 </project>
