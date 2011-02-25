@@ -1,0 +1,190 @@
+<!--
+ Copyright © 2011 J2Speed. All rights reserved.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at 
+ 
+      http://www.apache.org/licenses/LICENSE-2.0 
+ 
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<project basedir="." default="jar" name="asyncworks">
+  <property name="version" value="trunk" />
+  <property name="class.level" value="1.5" />
+
+  <property name="test.dir" value="build/test" />
+  <property name="test.classes.dir" value="${test.dir}/classes" />
+  <property name="build.classes.dir" value="build/classes" />
+  <property name="cobertura.dir" value="../../cobertura-1.9.4.1" />
+  <property name="instrumented.dir" value="build/instrumented" />
+  <property name="cobertura.data.file" value="build/cobertura.ser" />
+
+  <path id="cobertura.classpath">
+    <fileset dir="${cobertura.dir}">
+      <include name="cobertura.jar" />
+      <include name="lib/**/*.jar" />
+    </fileset>
+  </path>
+
+  <path id="project.classpath">
+    <pathelement location="${build.classes.dir}" />
+    <pathelement location="lib/annotations.jar" />
+    <pathelement location="lib/jsr305.jar" />
+    <pathelement location="lib/junit-4.8.2.jar" />
+    <pathelement location="lib/junit-dep-4.8.2.jar" />
+    <pathelement location="lib/accessive.jar" />
+    <pathelement location="lib/j2testing.jar" />
+  </path>
+
+  <taskdef classpathref="cobertura.classpath" resource="tasks.properties" />
+
+  <target name="jar" depends="build">
+    <jar destfile="build/${ant.project.name}.jar">
+      <fileset dir="${basedir}">
+        <include name="LICENSE.txt" />
+      </fileset>
+      <fileset dir="${build.classes.dir}">
+        <include name="**/*.class" />
+      </fileset>
+    </jar>
+  </target>
+
+  <target name="build" depends="init">
+    <javac destdir="${build.classes.dir}" optimize="true" debug="false" target="${class.level}">
+      <src path="src" />
+      <classpath refid="project.classpath" />
+    	<compilerarg value="-Xlint:deprecation"/>
+    </javac>
+  </target>
+
+  <target name="init">
+    <mkdir dir="build" />
+    <mkdir dir="${build.classes.dir}" />
+    <mkdir dir="${instrumented.dir}" />
+    <mkdir dir="${test.dir}" />
+    <mkdir dir="${test.classes.dir}" />
+  </target>
+
+  <target name="build-debug" depends="init">
+    <javac destdir="${build.classes.dir}" debug="true" target="${class.level}">
+      <src path="src" />
+      <classpath refid="project.classpath" />
+    </javac>
+  </target>
+
+  <target name="test" depends="clean, build-debug">
+    <javac destdir="${test.classes.dir}" debug="true" target="${class.level}">
+      <src path="test" />
+      <classpath refid="project.classpath" />
+      <compilerarg value="-Xlint:deprecation"/>
+    </javac>
+
+    <cobertura-instrument todir="${instrumented.dir}" datafile="${cobertura.data.file}">
+      <fileset dir="${build.classes.dir}">
+        <include name="**/*.class" />
+      </fileset>
+    </cobertura-instrument>
+
+    <junit fork="yes" forkmode="once" printsummary="on" dir="${test.dir}">
+      <sysproperty key="net.sourceforge.cobertura.datafile" file="${cobertura.data.file}" />
+      <formatter type="xml" />
+      <classpath>
+        <pathelement location="${instrumented.dir}" />
+        <path refid="project.classpath" />
+        <pathelement location="${test.classes.dir}" />
+        <path refid="cobertura.classpath" />
+      </classpath>
+      <batchtest todir="${test.dir}">
+        <fileset dir="${test.classes.dir}">
+          <include name="**/*Test.class" />
+        </fileset>
+      </batchtest>
+    </junit>
+
+    <junitreport todir="${test.dir}">
+      <fileset dir="${test.dir}">
+        <include name="TEST-*.xml" />
+      </fileset>
+      <report format="frames" todir="${test.dir}/report/html" />
+    </junitreport>
+
+    <cobertura-report format="html" datafile="${cobertura.data.file}" destdir="${test.dir}/coverage/html" srcdir="src" />
+
+    <delete>
+      <fileset dir="${test.dir}">
+        <include name="TEST-*.xml" />
+        <include name="TESTS-*.xml" />
+      </fileset>
+      <fileset dir="${build.classes.dir}">
+        <include name="**/*" />
+      </fileset>
+    </delete>
+    <delete dir="${test.classes.dir}" />
+    <delete dir="${instrumented.dir}" />
+  </target>
+
+  <target name="docs">
+    <javadoc packagenames="com.j2speed.*" sourcepath="src" classpathref="project.classpath" defaultexcludes="yes" destdir="build/docs/api" author="true" version="true" use="true" windowtitle="Accessive Framework">
+      <doctitle>
+        <![CDATA[<h1>Accessive Framework</h1>]]>
+		  </doctitle>
+      <bottom>
+        <![CDATA[<i>Copyright &#169; 2007-2009 J2Speed. All rights reserved.</i>]]>
+		 	</bottom>
+    </javadoc>
+  </target>
+
+  <target name="release" depends="tag-version, test, jar, docs" description="make accessive-xxx.zip">
+    <zip destfile="build/${ant.project.name}-${version}.zip">
+      <zipfileset dir="${basedir}">
+        <include name="README.txt" />
+        <include name="LICENSE.txt" />
+        <include name="build.xml" />
+        <include name="src/" />
+        <include name="test/" />
+      </zipfileset>
+      <zipfileset dir="${basedir}/build">
+        <include name="accessive.jar" />
+        <include name="docs/" />
+        <include name="test/" />
+      </zipfileset>
+      <zipfileset dir="${test.dir}">
+        <include name="coverage/" />
+        <include name="report/" />
+      </zipfileset>
+    </zip>
+    <delete dir="${build.classes.dir}" />
+  </target>
+
+  <target name="clean">
+    <delete dir="build" />
+  </target>
+  
+  <target name="tag-version" description="Tags the current version in the javadoc">
+    <replaceregexp byline="true">
+      <regexp pattern="@version[\s]*.*$" />
+      <substitution expression="@version ${version}" />
+      <fileset dir="src">
+        <include name="**/*.java" />
+      </fileset>
+      <fileset dir="test">
+        <include name="**/*.java" />
+      </fileset>
+    </replaceregexp>
+    <replaceregexp byline="true">
+      <regexp pattern="@since[\s]*$" />
+      <substitution expression="@since ${version}" />
+      <fileset dir="src">
+        <include name="**/*.java" />
+      </fileset>
+      <fileset dir="test">
+        <include name="**/*.java" />
+      </fileset>
+    </replaceregexp>
+  </target>
+</project>
