@@ -14,7 +14,7 @@
  limitations under the License.
 -->
 <project basedir="." default="jar" name="asyncworks">
-  <property name="version" value="0.9" />
+  <property name="version" value="trunk" />
   <property name="class.level" value="1.5" />
 
   <property name="test.dir" value="build/test" />
